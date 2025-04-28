@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WORKTIME C&R CONCRETE</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        padding: 1rem;
+        background-color: #fafafa;
+      }
+
+      h1,
+      h2 {
+        text-align: center;
+        color: #b30000;
+      }
+
+      input,
+      textarea,
+      select,
+      button {
+        color: #b30000;
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+
+      button {
+        background-color: #b30000;
+        color: white;
+        font-weight: bold;
+      }
+
+      .container {
+        border: 3px solid #01030d;
+        color: #1f2129;
+        max-width: 600px;
+        margin-top: 50px;
+        padding: 30px;
+        background-color: #b4b0b0;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+      @media (max-width: 600px) {
+        body {
+          padding: 0.5rem;
+        }
+
+        button {
+          font-size: 1.1rem;
+        }
+      }
+
+      label {
+        display: block;
+        margin-top: 10px;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      input,
+      textarea {
+        display: block;
+        width: 100%;
+        max-width: 600px; /* Opcional: para que no se estiren demasiado en pantallas grandes */
+        padding: 8px;
+        margin-bottom: 15px;
+        box-sizing: border-box;
+        border-radius: 5px; /* Hace que los inputs se vean redondeados */
+        border: 1px solid #ccc;
+      }
+
+      /* Desactivar zoom en dispositivos móviles */
+      input,
+      textarea {
+        touch-action: manipulation;
+        font-size: 14px; /* Ajusta el tamaño de la fuente si es necesario */
+      }
+
+      /* Evitar zoom en dispositivos móviles (meta viewport) */
+      meta[name="viewport"] {
+        content: "width=device-width, initial-scale=1.0, user-scalable=no";
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>WORKTIME C&R CONCRETE</h1>
+      <h2>Registro</h2>
+
+      <label for="username">Nombre:</label>
+
+      <input
+        type="text"
+        id="username"
+        placeholder="Ingresa tu nombre"
+        oninput="guardarNombre()"
+      />
+
+      <label for="fecha">Fecha:</label>
+      <input type="date" id="fecha" />
+
+      <label for="entrada">Entrada:</label>
+      <input type="time" id="entrada" />
+
+      <label for="salida">Salida:</label>
+      <input type="time" id="salida" />
+
+      <label for="lonche">Lonche:</label>
+      <input type="number" id="lonche" placeholder="Ej: 30" />
+
+      <label for="direccion">Dirección:</label>
+      <input type="text" id="direccion" />
+
+      <label for="descripcion">Notas:</label>
+      <textarea id="descripcion"></textarea>
+      <button onclick="guardarRegistro()">Guardar Registro</button>
+    </div>
+
+    <div class="container">
+      <h2>Generar Reporte</h2>
+      <label for="fechaInicio">Fecha inicio:</label>
+      <input type="date" id="fechaInicio" />
+      <label for="fechaFin">Fecha fin:</label>
+      <input type="date" id="fechaFin" />
+
+      <div class="button">
+        <button onclick="generateReport('txt')">.txt</button>
+        <button onclick="generateReport('xlsx')">.xlsx</button>
+        <button onclick="generateReport('pdf')">.pdf</button>
+      </div>
+    </div>
+    <script src="script.js"></script>
+
+    <script>
+      const registrosKey = "registrosTrabajo";
+
+      // Guardar nombre de usuario
+      function guardarNombre() {
+        const nombre = document.getElementById("username").value;
+        localStorage.setItem("nombreUsuario", nombre);
+      }
+
+      // Obtener nombre de usuario desde localStorage
+      function obtenerNombre() {
+        return localStorage.getItem("nombreUsuario") || "";
+      }
+
+      // Limpiar campos del formulario
+      function limpiarCampos() {
+        document.getElementById("fecha").value = "";
+        document.getElementById("entrada").value = "";
+        document.getElementById("salida").value = "";
+        document.getElementById("lonche").value = "";
+        document.getElementById("direccion").value = "";
+        document.getElementById("descripcion").value = "";
+      }
+
+      // Guardar registro de trabajo
+      function guardarRegistro() {
+        const registros = JSON.parse(localStorage.getItem(registrosKey)) || [];
+
+        const registro = {
+          fecha: document.getElementById("fecha").value,
+          entrada: document.getElementById("entrada").value,
+          salida: document.getElementById("salida").value,
+          lonche: parseInt(document.getElementById("lonche").value) || 0,
+          direccion: document.getElementById("direccion").value,
+          descripcion: document.getElementById("descripcion").value,
+          usuario: obtenerNombre(),
+        };
+
+        registros.push(registro);
+        localStorage.setItem(registrosKey, JSON.stringify(registros));
+        alert("Registro guardado exitosamente");
+        limpiarCampos();
+      }
+
+      // Función para generar reportes
+      function generateReport(type) {
+        const fechaInicio = document.getElementById("fechaInicio").value;
+        const fechaFin = document.getElementById("fechaFin").value;
+
+        if (!fechaInicio || !fechaFin) {
+          alert("Por favor, selecciona el rango de fechas.");
+          return;
+        }
+
+        const registros = JSON.parse(localStorage.getItem(registrosKey)) || [];
+
+        const registrosFiltrados = registros.filter((registro) => {
+          return registro.fecha >= fechaInicio && registro.fecha <= fechaFin;
+        });
+
+        if (registrosFiltrados.length === 0) {
+          alert("No se encontraron registros en el rango seleccionado.");
+          return;
+        }
+
+        if (type === "txt") {
+          generarTXT(registrosFiltrados, fechaInicio, fechaFin);
+        } else if (type === "xlsx") {
+          generarExcel(registrosFiltrados, fechaInicio, fechaFin);
+        } else if (type === "pdf") {
+          generarPDF(registrosFiltrados);
+        }
+      }
+
+      // Función para generar reporte en formato .txt
+      function generarTXT(registrosFiltrados, fechaInicio, fechaFin) {
+        let contenido = `C&R CONCRETE - Reporte de ${
+          registrosFiltrados[0].usuario || "Usuario"
+        }\n`;
+        contenido += `Rango de fechas: ${fechaInicio} a ${fechaFin}\n\n`;
+
+        registrosFiltrados.forEach((reg) => {
+          contenido += `Fecha: ${reg.fecha}\n`;
+          contenido += `Entrada: ${reg.entrada} | Salida: ${reg.salida} | Lonche: ${reg.lonche} min\n`;
+          contenido += `Dirección: ${reg.direccion}\n`;
+          contenido += `Descripción: ${reg.descripcion}\n`;
+          contenido += `----------------------------------\n`;
+        });
+
+        const blob = new Blob([contenido], { type: "text/plain" });
+        const enlace = document.createElement("a");
+        enlace.href = URL.createObjectURL(blob);
+        enlace.download = `Reporte_${fechaInicio}_a_${fechaFin}.txt`;
+        enlace.click();
+      }
+
+      // Función para generar reporte en formato .xlsx
+      function generarExcel(registrosFiltrados, fechaInicio, fechaFin) {
+        const data = [
+          [
+            "Usuario",
+            "Fecha",
+            "Hora Entrada",
+            "Hora Salida",
+            "Tiempo Lonche (min)",
+            "Dirección",
+            "Descripción",
+          ],
+        ];
+
+        registrosFiltrados.forEach((reg) => {
+          data.push([
+            reg.usuario || "",
+            reg.fecha,
+            reg.entrada,
+            reg.salida,
+            reg.lonche,
+            reg.direccion,
+            reg.descripcion,
+          ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+
+        XLSX.writeFile(wb, `Reporte_${fechaInicio}_a_${fechaFin}.xlsx`);
+      }
+
+      // Función para generar reporte en formato .pdf
+      function generarPDF(registrosFiltrados) {
+        const { jsPDF } = window.jspdf; // Obtener la clase jsPDF desde la librería
+
+        // Crear una nueva instancia de jsPDF
+        const doc = new jsPDF();
+
+        doc.setFontSize(16);
+        doc.text("C&R CONCRETE - Historial de Registros de Trabajo", 10, 10);
+        doc.text(`Total Registros: ${registrosFiltrados.length}`, 10, 20);
+
+        let y = 30; // Posición Y donde comienza la lista de registros
+
+        registrosFiltrados.forEach((reg, index) => {
+          if (y > 270) {
+            // Si llegamos al final de la página, agregamos una nueva página
+            doc.addPage();
+            y = 10; // Resetear posición Y
+          }
+
+          // Mostrar detalles del registro
+          doc.text(`Registro #${index + 1}`, 10, y);
+          y += 10;
+          doc.text(`Fecha: ${reg.fecha}`, 10, y);
+          y += 10;
+          doc.text(`Hora de Entrada: ${reg.entrada}`, 10, y);
+          y += 10;
+          doc.text(`Hora de Salida: ${reg.salida}`, 10, y);
+          y += 10;
+          doc.text(`Tiempo de Lonche: ${reg.lonche} min`, 10, y);
+          y += 10;
+          doc.text(`Dirección: ${reg.direccion}`, 10, y);
+          y += 10;
+          doc.text(`Descripción: ${reg.descripcion}`, 10, y);
+          y += 15; // Espacio entre registros
+        });
+
+        // Descargar el archivo PDF generado
+        doc.save(`Historial_Worktime_${new Date().toISOString()}.pdf`);
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Asegúrate de que el nombre del usuario se cargue correctamente cuando se carga la página
+        const usernameInput = document.getElementById("username");
+        usernameInput.value = obtenerNombre();
+      });
+    </script>
+  </body>
+</html>
